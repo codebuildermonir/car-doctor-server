@@ -11,7 +11,7 @@ app.use(express.json());
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.i3mosdj.mongodb.net/?retryWrites=true&w=majority`;
-//const uri = "mongodb+srv://<username>:<password>@cluster0.i3mosdj.mongodb.net/?retryWrites=true&w=majority";
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -29,7 +29,22 @@ async function run() {
 
     const serviceCollection= client.db('carDoctor').collection('carServices');
     const bookCollection= client.db('carDoctor').collection('bookings')
+ // Auth related api
 
+  app.post('/jwt', async(req, res)=>{
+    const user = req.body
+    console.log(user)
+    res.send(user)
+
+  })
+
+ 
+
+
+
+
+
+// Services related api
     app.get('/carServices', async(req, res)=>{
       const cursor = serviceCollection.find()
       const result = await cursor.toArray()
