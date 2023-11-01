@@ -1,13 +1,18 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors= require('cors');
 const app = express();
 const port = process.env.PORT || 5003;
 // middleware
-app.use(cors());
+app.use(cors({
+  origin:['http://localhost:5173'],
+  credentials:true
+}));
 app.use(express.json());
-
+app.use(cookieParser())
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.i3mosdj.mongodb.net/?retryWrites=true&w=majority`;
@@ -31,13 +36,23 @@ async function run() {
     const bookCollection= client.db('carDoctor').collection('bookings')
  // Auth related api
 
-  app.post('/jwt', async(req, res)=>{
-    const user = req.body
+ app.post('/jwt', async(req, res)=>{
+    const user= req.body
     console.log(user)
-    res.send(user)
+    const token= jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn:'10h'})
+    res
+    .cookie('token', token ,{
+      httpOnly:true,
+      secure:false
+    })
+    
+    .send({success:true})
 
-  })
 
+
+ })
+
+    
  
 
 
@@ -64,9 +79,10 @@ async function run() {
 
 
     app.get('/bookings', async(req, res)=>{
-
+      console.log(req.query.email)
+      console.log(req.cookies.token)
       let query = {};
-      if(req.query?.email){
+       if(req.query?.email){
         query = {email:req.query.email}
       }
 
@@ -76,6 +92,7 @@ async function run() {
     })
 
     app.post('/bookings', async(req, res)=>{
+      
       const book= req.body;
       const result= await bookCollection.insertOne(book)
       res.send(result)
@@ -93,10 +110,6 @@ async function run() {
     })
 
 
-
-
-
-
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -106,11 +119,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-
-
-
 
 
 app.get('/',(req,res)=>{
