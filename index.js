@@ -14,6 +14,30 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser())
 
+// my create middleware
+
+const verifyToken= async(req, res ,next)=>{
+  const token = req.cookies?.token;
+  
+  if(!token){
+    return res.status(401).send({message:'not authorized'})
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode)=>{
+    if(err){
+      return res.status(401).send({message:'not authorized'})
+    }
+    req.user =decode;
+
+    next()
+
+  })
+
+  
+}
+
+
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.i3mosdj.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -78,9 +102,11 @@ async function run() {
     })
 
 
-    app.get('/bookings', async(req, res)=>{
-      console.log(req.query.email)
-      console.log(req.cookies.token)
+    app.get('/bookings',verifyToken, async(req, res)=>{
+      if(req.query.email !== req.user.email){
+        return res.status(403).send({message:'forbidden access'})
+      }
+      
       let query = {};
        if(req.query?.email){
         query = {email:req.query.email}
